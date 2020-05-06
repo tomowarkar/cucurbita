@@ -14,7 +14,7 @@ def split_chunks(
         pattern_header = r"^\*\ \d+\ (?:-1|\d+)D\ \d+\/\d+\ -?\d+\.\d+$"
 
     if not pattern_morph:
-        pattern_morph = r"^[^,]*\t[^,]*(?:,[^,]*){8}$"
+        pattern_morph = r"^[^,]*\t[^,]*(?:,[^,]*){6,}$"
 
     pattern_header = re.compile(pattern_header)
     pattern_morph = re.compile(pattern_morph)
