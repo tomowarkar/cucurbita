@@ -8,7 +8,7 @@ logger = getLogger(__name__)
 
 class Morph(object):
     """CaboCha(MeCab)による形態素解析結果を受け取り、オブジェクトを返す
-    
+
     Args:
         line (str): 形態素解析結果の1行 (ipadic 辞書を想定)
 
@@ -25,7 +25,7 @@ class Morph(object):
         pron (str) ※1: 発音\n
 
         is_valid (bool): 有効な変換結果であるか
-        
+
         ※1: is_valid = False のとき AttributeError の可能性がある
 
     Raises:
@@ -175,14 +175,14 @@ class Doc:
         ... 無い\t形容詞,自立,*,*,形容詞・アウオ段,基本形,無い,ナイ,ナイ\n\
         ... 。\t記号,句点,*,*,*,*,。,。,。\n\
         ... EOS\n"
-        >>> 
+        >>>
         >>> doc = Doc(sentence)
         >>> doc
         <Doc: 名前はまだ無い。>
-        >>> 
+        >>>
         >>> doc.tokenize()
         [<Morph: 名前>, <Morph: は>, <Morph: まだ>, <Morph: 無い>, <Morph: 。>]
-        >>> 
+        >>>
         >>> doc.to_sect()
         <Sect: [<Chunk: [<Morph: 名前>, <Morph: は>]>, <Chunk: [<Morph: まだ>]>, <Chunk: [<Morph: 無い>, <Morph: 。>]>]>
 
