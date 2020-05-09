@@ -1,0 +1,47 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.8
+    steps:
+      - checkout
+      - run:
+          name: set up env
+          command: |
+            sudo pip install pipenv
+            pipenv install -dev
+            sudo apt-get install swig libmecab-dev mecab-ipadic-utf8
+            pipenv install -e .
+      - run:
+          name: download sources
+          command: |
+            curl -L -o CRF++-0.58.tar.gz "https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7QVR6VXJ5dWExSTQ"
+            url="https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7SDd1Q1dUQkZQaUU"
+            curl -c /tmp/cookie ${url} >/dev/null
+            code="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
+            curl -Lb /tmp/cookie ${url}"&confirm=${code}" -o cabocha-0.69.tar.bz2
+      - run:
+          name: unzip files
+          command: |
+            tar zxf CRF++-0.58.tar.gz
+            tar jxf cabocha-0.69.tar.bz2
+      - run:
+          name: install CRF++
+          command: |
+            cd CRF++-0.58
+            ./configure && make && sudo make install && sudo ldconfig
+            cd ..
+      - run:
+          name: install cabocha
+          command: |
+            cd cabocha-0.69
+            ./configure  -with-charset=utf-8 && make && make check && sudo make install &&  sudo ldconfig
+            cd python
+            pipenv run python setup.py build && pipenv run python setup.py install && sudo ldconfig
+            cd ..
+
+      - run:
+          name: run test
+          command: |
+            pipenv run pytest -v
