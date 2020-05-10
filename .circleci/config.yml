@@ -1,39 +1,49 @@
 version: 2.1
-
-jobs:
-  build:
+executors:
+  py-exec:
     docker:
       - image: circleci/python:3.6.8
+
+commands:
+  setup_env:
+    description: Install dependencies
     steps:
-      - checkout
       - run:
-          name: set up env
+          name: Install dependencies
           command: |
-            sudo pip install pipenv
-            pipenv install -dev
+            pipenv sync --dev
             sudo apt-get install swig libmecab-dev mecab-ipadic-utf8
-            pipenv install -e .
+            pipenv install mecab-python3
+      - build_crfpp
+      - build_cabocha
+
+  build_crfpp:
+    description: Build crfpp
+    steps:
       - run:
-          name: download sources
-          command: |
-            curl -L -o CRF++-0.58.tar.gz "https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7QVR6VXJ5dWExSTQ"
-            url="https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7SDd1Q1dUQkZQaUU"
-            curl -c /tmp/cookie ${url} >/dev/null
-            code="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
-            curl -Lb /tmp/cookie ${url}"&confirm=${code}" -o cabocha-0.69.tar.bz2
+          name: Download crfpp
+          command: curl -L -o CRF++-0.58.tar.gz "https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7QVR6VXJ5dWExSTQ"
+      - run: tar zxf CRF++-0.58.tar.gz
       - run:
-          name: unzip files
-          command: |
-            tar zxf CRF++-0.58.tar.gz
-            tar jxf cabocha-0.69.tar.bz2
-      - run:
-          name: install CRF++
+          name: Install crfpp
           command: |
             cd CRF++-0.58
             ./configure && make && sudo make install && sudo ldconfig
             cd ..
+
+  build_cabocha:
+    description: Build cabocha
+    steps:
       - run:
-          name: install cabocha
+          name: Download cabocha
+          command: |
+            url="https://drive.google.com/uc?export=download&id=0B4y35FiV1wh7SDd1Q1dUQkZQaUU"
+            curl -c /tmp/cookie ${url} >/dev/null
+            code="$(awk '/_warning_/ {print $NF}' /tmp/cookie)"
+            curl -Lb /tmp/cookie ${url}"&confirm=${code}" -o cabocha-0.69.tar.bz2
+      - run: tar jxf cabocha-0.69.tar.bz2
+      - run:
+          name: Install cabocha
           command: |
             cd cabocha-0.69
             ./configure  -with-charset=utf-8 && make && make check && sudo make install &&  sudo ldconfig
@@ -41,7 +51,24 @@ jobs:
             pipenv run python setup.py build && pipenv run python setup.py install && sudo ldconfig
             cd ..
 
+jobs:
+  build:
+    executor: py-exec
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-pip-cucurbita-v1-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+            - cache-pip-cucurbita-v1-{{ .Branch }}-
+      - setup_env
+      - save_cache:
+          paths:
+            - ~/.local
+          key: cache-pip-cucurbita-v1-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
       - run:
-          name: run test
+          name: test
           command: |
-            pipenv run pytest -v
+            pipenv run pytest --junitxml=test-results/junit.xml
+      - store_test_results:
+          path: test-results
+      - run: pipenv run pytest --cov=cucurbita
