@@ -1,3 +1,4 @@
+import itertools
 from logging import getLogger
 from typing import Iterator, List, Tuple, Union
 
@@ -91,10 +92,10 @@ class Chunk(object):
         self.morphs = [Morph(line=morph) for morph in morphs]
 
     def __str__(self) -> str:
-        return " ".join(map(str, self.morphs))
+        return "".join(map(str, self.morphs))
 
     def __repr__(self) -> str:
-        return f"<Chunk: {self.morphs}>"
+        return "<Chunk: {}>".format(" ".join(map(str, self.morphs)))
 
     def __parse_header(self, line: str) -> Tuple[int, int, float]:
         _, pos, dst, _, score, *_ = line.split()
@@ -104,48 +105,89 @@ class Chunk(object):
         return int(pos), int(dst), float(score)
 
 
-# class Sect(Cab):
-#     # self.chunks = list(self.__parse_chunks(result))
-#     def __str__(self):
-#         return " / ".join(map(str, self.chunks))
+class Cab(object):
+    """Cab(CaboCha, MeCab)解析用ベースクラス
 
-#     def __repr__(self):
-#         return f"<Sect: {self.chunks}>"
+    Arguments:
+        result {str} -- CaboCha, MeCab解析結果
+        text {str} -- CaboCha, MeCab解析元本文
 
-#     def __parse_chunks(self, text):
-#         for chunk in split_chunks(text):
-#             yield Chunk(*chunk)
+    Attributes:
+        result {str} -- CaboCha, MeCab解析結果
+        text {str} -- CaboCha, MeCab解析元本文
 
-#     def to_doc(self):
-#         return Doc(self.result, self.text)
+    """
+
+    def __init__(self, result: str, text: str = "") -> None:
+        self.result = result
+        self.text = text if text else self.__get_surface(result)
+
+    def __get_surface(self, text: str) -> str:
+        """形態素解析結果から表層系だけを抜き出す"""
+        surface = ""
+        for line in text.splitlines():
+            line = line.split("\t")
+            if len(line) == 2:
+                surface += line[0]
+        return surface
+
+    def tokenize(self) -> List[Morph]:
+        """形態素解析結果からmorphsの配列を生成する"""
+        tokens = []
+        for _, morphs in split_chunks(self.result):
+            tokens += morphs
+        return [Morph(token) for token in tokens]
 
 
-# class Doc(Cab):
-#     def __str__(self) -> str:
-#         return self.text
+class Sect(Cab):
+    """cabocha用インターフェイス
 
-#     def __repr__(self) -> str:
-#         return f"<Doc: {self.text}>"
+    Arguments:
+        result {str} -- CaboCha解析結果
+        text {str} -- CaboCha解析元本文
 
-#     def to_sect(self)->Sect:
-#         return Sect(self.result, self.text)
+    Attributes:
+        result {str} -- CaboCha解析結果
+        text {str} -- CaboCha解析元本文
+        chunks {List[Chunk]} -- 文節集合
+
+    Usage:
+        >>> from cucurbita.cab import Chunk
+
+    """
+
+    def __init__(self, result: str, text: str = "") -> None:
+        super().__init__(result=result, text=text)
+        self.chunks = [
+            Chunk(morphs=morphs, header=header)
+            for header, morphs in split_chunks(result)
+        ]
+
+    def __str__(self) -> str:
+        return "".join(map(str, self.chunks))
+
+    def __repr__(self) -> str:
+        return "<Sect: {}>".format(" / ".join(map(str, self.chunks)))
 
 
-# class Cab(object):
+class Doc(Cab):
+    """mecab用インターフェイス
 
-#     def __init__(self, result: str, text: str = "") -> None:
-#         self.result = result
-#         self.text = text if text else self.__get_surface(result)
+    Arguments:
+        result {str} -- MeCab解析結果
+        text {str} -- MeCab解析元本文
 
-#     def __get_surface(self, text: str) -> str:
-#         """形態素解析結果から表層系だけを抜き出す"""
-#         surface = ""
-#         for line in text.splitlines():
-#             if len(line) == 2:
-#                 surface += line[0]
-#         return surface
+    Attributes:
+        result {str} -- MeCab解析結果
+        text {str} -- MeCab解析元本文
 
-#     def tokenize(self) -> List[Morph]:
-#         """形態素解析結果からmorphsの配列を生成する"""
-#         tokens = [morphs for _, morphs in split_chunks(self.result)]
-#         return [Morph(token) for token in tokens]
+    Usage:
+        >>> from cucurbita.cab import Doc
+
+    """
+
+    def __str__(self) -> str:
+        return self.text
+
+    def __repr__(self) -> str:
+        return f"<Doc: {self.text}>"
