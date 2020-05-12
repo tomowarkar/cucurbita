@@ -1,6 +1,7 @@
+import itertools
 import re
 from logging import getLogger
-from typing import Iterator, List, Match, Pattern, Tuple
+from typing import Iterator, List, Match, Pattern, Tuple, Union
 
 logger = getLogger(__name__)
 
@@ -87,3 +88,12 @@ def split_chunks(
         else:
             # header でも morphでもないパターンはログに残しスキップ
             logger.warn(f"undefined pattern: {repr(line)}")
+
+
+def split_words(parsed_line: str) -> List[Union[str, None]]:
+    """形態素解析結果を分割する"""
+    num = 10
+    values = [e.split(",") for e in parsed_line.rstrip("\n").split("\t")]
+    values = list(itertools.chain.from_iterable(values))
+    assert 0 < len(values) < num + 1
+    return values + [None] * (num - len(values))
