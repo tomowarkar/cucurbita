@@ -13,16 +13,16 @@ class Morph(object):
         line {str} -- 形態素解析結果の1行 (ipadic 辞書を想定)
 
     Attributes:
-        surface  {str} -- 表層系
-        pos (str)  {str} -- 品詞
-        pos1  (str)  {str} -- 品詞詳細1
-        pos2  (str)  {str} -- 品詞詳細2
-        pos3  (str)  {str} -- 品詞詳細3
-        conj_form  (str)  {str} -- 活用形
-        conj  (str)  {str} -- 活用型
-        base  (str)  {str} -- 基本形
-        yomi  (str)  {str} -- 読み
-        pron (str)  {str} -- 発音
+        surface {str} -- 表層系
+        pos {str} -- 品詞
+        pos1 {str} -- 品詞詳細1
+        pos2 {str} -- 品詞詳細2
+        pos3 {str} -- 品詞詳細3
+        conj_form {str} -- 活用形
+        conj {str} -- 活用型
+        base {str} -- 基本形
+        yomi {str} -- 読み
+        pron {str} -- 発音
 
     Usage:
         >>> from cucurbita.cab import Morph
@@ -58,58 +58,50 @@ class Morph(object):
         return f"<Morph: {self.surface}>"
 
 
-# class Chunk(object):
-#     """文節オブジェクト
+class Chunk(object):
+    """文節オブジェクト
 
-#     単語オブジェクトを格納する
+    Arguments:
+        header {str} -- 文節解析結果のヘッダー
+        morphs {List[str]} -- 文節解析結果の単語の配列
 
-#     Args:
-#         header (str): 文節解析結果のヘッダー\n
-#             e.g. "* 0 2D 0/1 -1.911675"\n
-#         morphs (List[str]): 文節解析結果の単語の配列\n
-#             e.g. ["名前\\t名詞,一般,*,*,*,*,名前,ナマエ,ナマエ\\n", "は\\t助詞,係助詞,*,*,*,*,は,ハ,ワ"]\n
+    Attributes:
+        pos {int} -- 文節内での位置(文節番号)
+        dst {int} -- かかる対象の文節番号
+        score {float} -- 係度合い
+        morphs {List[Morph]} -- 構成する単語
 
-#     Attributes:
-#         pos (int): 文章内での文節番号\n
-#         dst (int): かかる文節番号\n
-#         score (float): かかり度合い\n
-#         morphs (list_iterator): 単語オブジェクト(Morph)の配列\n
+    Raises:
+        Exception -- ヘッダ行のフォーマットがおかしい場合
 
-#     Usage:
-#         >>> header = "* 0 2D 0/1 -1.911675\\n"
-#         >>> morphs = ["名前\\t名詞,一般,*,*,*,*,名前,ナマエ,ナマエ\\n", "は\\t助詞,係助詞,*,*,*,*,は,ハ,ワ\\n"]
-#         >>> chunk = Chunk(header, morphs)
-#         >>> chunk
-#         <Chunk: [<Morph: 名前>, <Morph: は>]>
-#         >>> chunk.morphs
-#         [<Morph: 名前>, <Morph: は>]
-#         >>> c.pos, c.dst, c.score
-#         (0, 2, -1.911675)
-#     """
+    Usage:
+        >>> from cucurbita.cab import Chunk
+        >>> header = "* 0 2D 0/1 -1.911675"
+        >>> morphs = ["surface\tpos,pos1,pos2,pos3,conj_form,conj,base,yomi,pron"]
+        >>> c = Chunk(morphs=morphs, header=header)
+        >>> c.pos
+        0
+    """
 
-#     def __init__(self, header: str, morphs: List[str]) -> None:
-#         if header:
-#             self.pos, self.dst, self.score = self.__split_words(header)
-#         else:
-#             self.pos = self.dst = self.score = 0
-#         self.morphs = list(self.__parse_morphs(morphs))
+    def __init__(self, morphs: List[str], header: str = "") -> None:
+        if header:
+            self.pos, self.dst, self.score = self.__parse_header(line=header)
+        else:
+            self.pos = self.dst = self.score = 0
+        self.morphs = [Morph(line=morph) for morph in morphs]
 
-#     def __str__(self) -> str:
-#         return " ".join(map(str, self.morphs))
+    def __str__(self) -> str:
+        return " ".join(map(str, self.morphs))
 
-#     def __repr__(self) -> str:
-#         return f"<Chunk: {self.morphs}>"
+    def __repr__(self) -> str:
+        return f"<Chunk: {self.morphs}>"
 
-#     def __split_words(self, line: str) -> Tuple[int, int, float]:
-#         _, pos, dst, _, score, *_ = line.split()
-#         if not dst.endswith("D"):
-#             raise Exception("Undefined format")
-#         dst = dst.rstrip("D")
-#         return int(pos), int(dst), float(score)
-
-#     def __parse_morphs(self, morphs: List[str]) -> Iterator["Morph"]:
-#         for morph in morphs:
-#             yield Morph(morph)
+    def __parse_header(self, line: str) -> Tuple[int, int, float]:
+        _, pos, dst, _, score, *_ = line.split()
+        if not dst.endswith("D"):
+            raise Exception("Undefined format")
+        dst = dst.rstrip("D")
+        return int(pos), int(dst), float(score)
 
 
 # class Sect(Cab):
