@@ -65,6 +65,7 @@ jobs:
           paths:
             - ~/.local
           key: cache-pip-cucurbita-v1-{{ .Branch }}-{{ checksum "Pipfile.lock" }}
+      - run: pipenv install -e .
       - run:
           name: test
           command: |
