@@ -1,4 +1,3 @@
-import itertools
 import re
 from logging import getLogger
 from typing import Iterator, List, Match, Pattern, Tuple, Union
@@ -61,7 +60,7 @@ def split_chunks(
         pattern_header = re.compile(r"^\*\ \d+\ (?:-1|\d+)D\ \d+\/\d+\ -?\d+\.\d+$")
 
     if pattern_morph == re.compile(""):
-        pattern_morph = re.compile(r"^[^,]*\t[^,]*(?:,[^,]*){6,}$")
+        pattern_morph = re.compile(r"^[^\t]*\t[^,]*(?:,[^,]*){6,}$")
 
     header = ""
     morphs: List[str] = []
@@ -93,7 +92,7 @@ def split_chunks(
 def split_words(parsed_line: str) -> List[Union[str, None]]:
     """形態素解析結果を分割する"""
     num = 10
-    values = [e.split(",") for e in parsed_line.rstrip("\n").split("\t")]
-    values = list(itertools.chain.from_iterable(values))
+    surface, e = parsed_line.rstrip("\n").split("\t")
+    values = [surface] + e.split(",")
     assert 0 < len(values) < num + 1
     return values + [None] * (num - len(values))
